@@ -1,0 +1,69 @@
+import { google } from '@ai-sdk/google';
+import { streamText } from 'ai';
+import { generateTextEmbedding } from '@/lib/ai/embedder';
+import { supabaseAdmin } from '@/lib/supabase';
+
+// Allow streaming responses up to 60 seconds
+export const maxDuration = 60;
+
+export async function POST(req: Request) {
+  try {
+    const { messages, user_id } = await req.json();
+
+    if (!user_id) {
+      return new Response('User ID is required', { status: 401 });
+    }
+
+    // Get the user's latest query
+    const latestMessage = messages[messages.length - 1];
+    const userQuery = latestMessage.content;
+
+    // Step 1: Generate an embedding for the user's query
+    const queryEmbedding = await generateTextEmbedding(userQuery);
+
+    // Step 2: Semantic Search (RAG) against Supabase
+    // match_threshold: 0.5 (adjustable depending on how strict you want matches to be)
+    // match_count: 5 (limit context to top 5 most relevant items)
+    const { data: documents, error } = await supabaseAdmin.rpc('match_embeddings', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.5,
+      match_count: 5,
+      p_user_id: user_id,
+    });
+
+    if (error) {
+      console.error("Vector search error:", error);
+      throw error;
+    }
+
+    // Step 3: Format the context for the LLM
+    let contextString = '';
+    if (documents && documents.length > 0) {
+      contextString = "Here is some context from the user's Second Brain memory:\n\n";
+      documents.forEach((doc: any, index: number) => {
+        contextString += `[Memory ${index + 1}] (Type: ${doc.reference_type}):\n${doc.content}\n\n`;
+      });
+    }
+
+    // Wrap the context in a system message
+    const systemPrompt = `You are an AI "Second Brain" and execution partner. 
+You help the user recall their ideas, organize projects, and generate new content based on their past thoughts.
+Always use the provided context from their memory to give accurate, personalized answers.
+If they ask you to write something (like a blog or ebook) based on a project, use the memory context to outline and draft it.
+If no context is relevant, just act as a helpful thinking partner.
+
+${contextString}`;
+
+    // Step 4: Stream the LLM Output
+    const result = streamText({
+      model: google('gemini-2.5-flash'),
+      system: systemPrompt,
+      messages,
+    });
+
+    return result.toTextStreamResponse();
+  } catch (err: any) {
+    console.error("Chat API Error:", err);
+    return new Response(err.message || "Internal Server Error", { status: 500 });
+  }
+}
