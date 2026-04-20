@@ -41,12 +41,14 @@ export async function GET(request: Request) {
       ...(ideasRes.data || []).map((i) => ({
         id: i.id,
         text: i.summary || i.content,
+        summary: i.content, // Pass the full content as the expanded summary
         type: 'idea',
         created_at: i.created_at,
       })),
       ...(tasksRes.data || []).map((t) => ({
         id: t.id,
         text: t.title,
+        summary: `Status: ${t.status}`,
         type: 'task',
         created_at: t.created_at,
       })),

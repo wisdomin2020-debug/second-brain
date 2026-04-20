@@ -60,13 +60,13 @@ create table embeddings (
   reference_id uuid not null, -- Can point to an idea, project, or document
   reference_type text not null check (reference_type in ('idea', 'project', 'document')),
   content text not null, -- The original text that was embedded (useful for RAG injection)
-  embedding vector(768), -- 768 is standard for Google text-embedding-004
+  embedding vector(3072), -- 768 is standard for Google text-embedding-004
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Match Embeddings Database Function (RAG Similarity Search)
 create or replace function match_embeddings (
-  query_embedding vector(768),
+  query_embedding vector(3072),
   match_threshold float,
   match_count int,
   p_user_id uuid
