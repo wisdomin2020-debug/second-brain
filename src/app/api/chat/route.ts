@@ -16,7 +16,15 @@ export async function POST(req: Request) {
 
     // Get the user's latest query
     const latestMessage = messages[messages.length - 1];
-    const userQuery = latestMessage.content;
+    
+    // In newer AI SDK versions, content might be in 'parts'
+    let userQuery = latestMessage.content || '';
+    if (!userQuery && latestMessage.parts) {
+      userQuery = latestMessage.parts
+        .filter((p: any) => p.type === 'text')
+        .map((p: any) => p.text)
+        .join('\n');
+    }
 
     // Step 1: Generate an embedding for the user's query
     const queryEmbedding = await generateTextEmbedding(userQuery);
@@ -55,10 +63,16 @@ If no context is relevant, just act as a helpful thinking partner.
 ${contextString}`;
 
     // Step 4: Stream the LLM Output
+    // Safety: Transform messages to ensure they match the CoreMessage format expected by streamText
+    const formattedMessages = messages.map((m: any) => ({
+      role: m.role,
+      content: m.content || (m.parts ? m.parts.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('\n') : '')
+    }));
+
     const result = streamText({
       model: google('gemini-2.5-flash'),
       system: systemPrompt,
-      messages,
+      messages: formattedMessages,
     });
 
     return result.toTextStreamResponse();

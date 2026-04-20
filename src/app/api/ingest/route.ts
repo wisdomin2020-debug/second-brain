@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       // A unified string containing all context for the vector
       const embedText = `Title: ${structuredData.summary}\nType: ${structuredData.classification}\nTags: ${structuredData.tags.join(', ')}\nContent: ${structuredData.formatted_content}`;
       
-      const embedding = await generateTextEmbedding(embedText);
+      const embedding = await generateTextEmbedding(embedText, 'retrieval_document');
 
       const { error: embedError } = await supabaseAdmin.from('embeddings').insert({
         user_id: userId,
