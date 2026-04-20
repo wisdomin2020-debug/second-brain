@@ -196,7 +196,27 @@ export function MemoryFeed({
                               Generate Draft
                             </button>
                             {m.type === 'task' && (
-                              <button className="flex-1 py-2 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
+                              <button 
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const btn = e.currentTarget;
+                                  btn.disabled = true;
+                                  try {
+                                    const res = await fetch(`/api/tasks/${m.id}`, {
+                                      method: 'PATCH',
+                                      body: JSON.stringify({ status: 'completed' })
+                                    });
+                                    if (res.ok) {
+                                      refresh();
+                                    }
+                                  } catch (e) {
+                                    alert("Failed to update task.");
+                                  } finally {
+                                    btn.disabled = false;
+                                  }
+                                }}
+                                className="flex-1 py-2 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
                                 <CheckSquare className="w-3.5 h-3.5" />
                                 Mark as Done
                               </button>
