@@ -10,9 +10,8 @@ export async function POST(req: Request) {
   try {
     const { messages, user_id } = await req.json();
 
-    if (!user_id) {
-      return new Response('User ID is required', { status: 401 });
-    }
+    // Fall back to the prototype user ID if none provided
+    const userId = user_id || '00000000-0000-0000-0000-000000000000';
 
     // Get the user's latest query
     const latestMessage = messages[messages.length - 1];
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
       query_embedding: queryEmbedding,
       match_threshold: 0.5,
       match_count: 5,
-      p_user_id: user_id,
+      p_user_id: userId,
     });
 
     if (error) {
@@ -75,6 +74,7 @@ ${contextString}`;
       messages: formattedMessages,
     });
 
+    // Using toTextStreamResponse for maximum compatibility with Next.js 16 build worker
     return result.toTextStreamResponse();
   } catch (err: any) {
     console.error("Chat API Error:", err);

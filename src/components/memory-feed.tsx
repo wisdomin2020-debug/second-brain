@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lightbulb, CheckSquare, FolderKanban, RefreshCw, Inbox, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 
-type MemoryType = "idea" | "task" | "project";
+type MemoryType = "idea" | "task" | "project" | "document";
 
 interface Memory {
   id: string;

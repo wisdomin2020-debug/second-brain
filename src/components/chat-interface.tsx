@@ -1,30 +1,45 @@
 "use client";
-import { useChat } from 'ai/react';
+
+import { useChat } from '@ai-sdk/react';
 import { Send, Sparkles, Loader2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 export function ChatInterface() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/chat',
-    body: {
-      user_id: '00000000-0000-0000-0000-000000000000',
-    }
-  });
+  const [input, setInput] = useState('');
+
+  // @ai-sdk/react v3 API uses sendMessage + status (not handleSubmit/handleInputChange)
+  const { messages, sendMessage, status } = useChat();
+
+  const isLoading = status === 'streaming' || status === 'submitted';
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) return;
+    setInput('');
+    await sendMessage({ text: trimmed });
+  };
+
   return (
     <div className="flex flex-col h-[580px] bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl relative">
+      {/* Header */}
       <div className="flex items-center gap-2 px-6 py-4 border-b border-neutral-800 bg-neutral-950">
         <Sparkles className="w-5 h-5 text-indigo-400" />
         <h3 className="text-lg font-bold text-white/90">Execution Partner</h3>
         {isLoading && (
           <span className="ml-auto flex items-center gap-1.5 text-xs text-neutral-500">
             <Loader2 className="w-3 h-3 animate-spin" />
-            Thinking...
+            Thinking…
           </span>
         )}
       </div>
+
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-neutral-500 text-sm text-center gap-3">
@@ -35,33 +50,45 @@ export function ChatInterface() {
             </p>
           </div>
         ) : (
-          messages.map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((m) => {
+            const text = (m.parts ?? [])
+                  .filter((p: any) => p.type === 'text')
+                  .map((p: any) => p.text)
+                  .join('\n');
+
+            return (
               <div
-                className={`max-w-[85%] rounded-2xl px-5 py-3 ${
-                  m.role === 'user'
-                    ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md'
-                    : 'bg-white/[0.03] text-neutral-200 border border-white/5 rounded-tl-sm'
-                }`}
+                key={m.id}
+                className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {m.parts?.filter((p) => p.type === 'text').map((p) => (p as any).text).join('\n') ?? ''}
+                <div
+                  className={`max-w-[85%] rounded-2xl px-5 py-3 ${
+                    m.role === 'user'
+                      ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md'
+                      : 'bg-white/[0.03] text-neutral-200 border border-white/5 rounded-tl-sm'
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {text}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Input */}
       <div className="p-4 bg-neutral-950 border-t border-neutral-800">
         <form onSubmit={handleSubmit} className="relative flex items-center">
           <input
             value={input}
-            onChange={handleInputChange}
-            placeholder="Instruct the agent..."
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) handleSubmit(e as any);
+            }}
+            placeholder="Instruct the agent…"
             disabled={isLoading}
             className="w-full bg-neutral-900 border border-neutral-800 rounded-full px-5 py-3 pr-12 text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all disabled:opacity-50"
           />
