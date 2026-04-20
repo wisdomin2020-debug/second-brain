@@ -10,38 +10,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 401 });
     }
 
-    // Fetch recent items from all three tables concurrently
-    const [ideasRes, tasksRes, projectsRes] = await Promise.all([
-      supabaseAdmin
-        .from('ideas')
-        .select('id, content, summary, tags, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10),
-      supabaseAdmin
-        .from('tasks')
-        .select('id, title, status, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10),
-      supabaseAdmin
-        .from('projects')
-        .select('id, name, status, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10),
+    // Fetch recent items from all four tables concurrently
+    const [ideasRes, tasksRes, projectsRes, docsRes] = await Promise.all([
+      supabaseAdmin.from('ideas').select('id, content, summary, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
+      supabaseAdmin.from('tasks').select('id, title, status, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
+      supabaseAdmin.from('projects').select('id, name, status, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
+      supabaseAdmin.from('documents').select('id, title, content, type, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
     ]);
 
     if (ideasRes.error) throw ideasRes.error;
     if (tasksRes.error) throw tasksRes.error;
     if (projectsRes.error) throw projectsRes.error;
+    if (docsRes.error) throw docsRes.error;
 
     // Normalise into a unified shape and sort by recency
     const memories = [
       ...(ideasRes.data || []).map((i) => ({
         id: i.id,
         text: i.summary || i.content,
-        summary: i.content, // Pass the full content as the expanded summary
+        summary: i.content,
         type: 'idea',
         created_at: i.created_at,
       })),
@@ -57,6 +44,13 @@ export async function GET(request: Request) {
         text: p.name,
         type: 'project',
         created_at: p.created_at,
+      })),
+      ...(docsRes.data || []).map((d) => ({
+        id: d.id,
+        text: d.title,
+        summary: d.content,
+        type: 'document',
+        created_at: d.created_at,
       })),
     ].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

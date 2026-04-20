@@ -48,7 +48,7 @@ create table documents (
   project_id uuid references projects on delete set null,
   title text not null,
   content text not null,
-  type text check (type in ('ebook', 'blog', 'notes', 'other')),
+  type text check (type in ('ebook', 'blog', 'notes', 'social_post', 'outline', 'other')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

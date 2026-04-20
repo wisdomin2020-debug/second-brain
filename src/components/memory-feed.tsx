@@ -35,6 +35,12 @@ const TYPE_META: Record<MemoryType, { label: string; color: string; bg: string; 
     bg: "bg-fuchsia-500/10 border-fuchsia-500/20",
     Icon: FolderKanban,
   },
+  document: {
+    label: "Draft",
+    color: "text-sky-400",
+    bg: "bg-sky-500/10 border-sky-500/20",
+    Icon: ExternalLink,
+  },
 };
 
 function timeAgo(dateStr: string) {
@@ -163,16 +169,38 @@ export function MemoryFeed({
                           </div>
                           
                           <div className="flex items-center gap-3">
+                            <button 
+                              onClick={async () => {
+                                const btn = document.getElementById(`gen-btn-${m.id}`);
+                                if (btn) btn.innerText = "Generating...";
+                                try {
+                                  const res = await fetch('/api/generate', {
+                                    method: 'POST',
+                                    body: JSON.stringify({ content: m.summary || m.text, type: 'social_post' })
+                                  });
+                                  const json = await res.json();
+                                  if (json.success) {
+                                    alert("Draft generated successfully! Check your documents.");
+                                    window.dispatchEvent(new Event("brain:captured")); // Refresh list
+                                  }
+                                } catch (e) {
+                                  alert("Failed to generate draft.");
+                                } finally {
+                                  if (btn) btn.innerText = "Generate Draft";
+                                }
+                              }}
+                              id={`gen-btn-${m.id}`}
+                              className="flex-1 py-2 px-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold hover:bg-indigo-500/20 transition-all flex items-center justify-center gap-2"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              Generate Draft
+                            </button>
                             {m.type === 'task' && (
                               <button className="flex-1 py-2 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2">
                                 <CheckSquare className="w-3.5 h-3.5" />
                                 Mark as Done
                               </button>
                             )}
-                            <button className="py-2 px-4 rounded-xl bg-white/5 border border-white/10 text-neutral-400 text-xs font-bold hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              Details
-                            </button>
                           </div>
                         </div>
                       </motion.div>

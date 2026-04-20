@@ -4,6 +4,8 @@ import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 
 export const resurfaceStaleIdeas = inngest.createFunction(
+  { id: "resurface-stale-ideas", cron: "0 9 * * *" },
+  async ({ step }) => {
   { id: "resurface-stale-ideas" },
   { cron: "0 9 * * *" }, // Run every day at 9 AM
   async ({ step }) => {
