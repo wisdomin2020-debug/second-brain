@@ -164,7 +164,7 @@ export function MemoryFeed({
                         className="px-5 pb-5 pt-1 overflow-hidden"
                       >
                         <div className="pl-11 flex flex-col gap-4">
-                          <div className="p-4 rounded-2xl bg-black/40 border border-neutral-800/50 text-sm text-neutral-400 leading-relaxed">
+                          <div className="p-4 rounded-2xl bg-black/60 border border-neutral-800/50 text-sm text-neutral-300 leading-relaxed max-h-[400px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
                             {m.summary || m.text}
                           </div>
                           

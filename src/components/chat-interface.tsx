@@ -72,10 +72,10 @@ export function ChatInterface() {
                 }`}
               >
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {m.parts
+                  {m.content || (m.parts
                     ?.filter((p) => p.type === 'text')
                     .map((p) => (p as any).text)
-                    .join('\n')}
+                    .join('\n'))}
                 </div>
               </div>
             </div>
