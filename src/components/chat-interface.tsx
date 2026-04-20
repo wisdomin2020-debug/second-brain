@@ -78,6 +78,7 @@ export function ChatInterface() {
         )}
         <div ref={messagesEndRef} />
       </div>
+{/* Chat messages end */}
 
       {/* Input */}
       <div className="p-4 bg-neutral-950 border-t border-neutral-800">
